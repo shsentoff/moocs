@@ -1,0 +1,174 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage[left=1.00in, right=1.00in, top=1.00in, bottom=1.00in]{geometry}
+\usepackage{float}
+\author{Stephen H Sentoff}
+
+<<echo=FALSE, message=FALSE>>=
+# Set up
+opts_chunk$set(tidy=FALSE)
+library(ggplot2)
+@
+\setkeys{Gin}{width=0.49\textwidth}
+
+\begin{document}
+\section{Visualization of Power of a Hypothesis Test}
+Let us consider the simplest of case of calculating the power of a hypothesis test.
+This will assume the distributions are normal with a known population standard
+deviation and that we are doing a one-sided hypothesis test.
+For all the plots, we will consider the null hypothesis as $ H_0: \mu = \mu_0 = 0 $ and 
+the alternative hypothesis $ H_a: \mu < 0 $.
+
+In the first plot (figure \ref{fig:base}) we show the case where we determine the power of detecting
+an effect size $ (\mu_a - \mu_0) / \sigma = 1/2 $, and where $ \alpha = 0.05 $
+and $ n = 20 $.
+The black curve is the distribution of $ \bar{X} $ under the null hypothesis
+$ \mu = \mu_0 $ and the blue curve is the distribution of $ \bar{X} $
+under the hypothesis $ \mu = \mu_a $.
+The vertical line marks the rejection region; it is chosen so that the area under
+the black curve to the left of the line is $ \alpha $, the probability of a type 1 error.
+The shaded area under the blue curve to the left of the line is the power:
+the probability that
+we will reject the null hypothesis given that the true mean is $ \mu_a $.
+For this example, the power is about 72\%.
+
+\begin{figure}[H]
+\centering
+\includegraphics{figure/base}
+\caption{Effect size = 1/2; $n$ = 20; $\alpha = .05 $}
+\label{fig:base}
+\end{figure}
+\section{Vary the Type 1 Error Rate}
+In figure \ref{fig:alpha} we increase $ \alpha $ to 0.10.
+This moves the cut-off line for the rejection region to the right, and thus
+increases the power of the hypothesis test.
+It's worth noting at this point that the unshaded area under the blue curve
+is $ \beta $, the type 2 error rate; the power of the test is $ 1-\beta $.
+Thus we see that if we are willing to accept a higher type 1 error
+rate ($ \alpha $), we will have a higher power and a smaller type 2 error
+rate ($ \beta $).
+For this example, the power is now about 83\%.
+
+\begin{figure}[H]
+\centering
+\includegraphics{figure/alpha}
+\caption{Effect size = 1/2; $n$ = 20; $\alpha = .10 $}
+\label{fig:alpha}
+\end{figure}
+
+\section{Vary the Effect Size}
+In figure \ref{fig:effect} we return $ \alpha $ to its previous value of 0.05,
+but now reduce the effect size that we want to detect to 1/4.
+This moves the blue curve to the right, and thus
+less of the curve is to the left of the rejection cut-off line, so reducing
+the power.
+Note that if we were to reduce the effect size to 0 by moving the blue curve
+until it overlapped with the black curve, the power would be equal to $ \alpha $.
+Thus the limit of the power as the effect size goes to 0 is $ \alpha $.
+For this example, the power is now only about 30\%.
+
+\begin{figure}[H]
+\centering
+\includegraphics{figure/effect}
+\caption{Effect size = 1/4; $n$ = 20; $\alpha = .05 $}
+\label{fig:effect}
+\end{figure}
+
+\section{Vary the Sample Size}
+Finally in figure \ref{fig:size} we increase the sample size $ n $ to 100,
+while leaving the effect size at 1/4.
+This narrows the distribution curves, since the standard error is reduced.
+It has two effects on the diagram, both of which increase the power of the
+test.
+Firstly, the rejection cut-off line moves to the right, because with a narrower
+distribution for the null hypothesis more of the area under curve is to the right.
+Secondly, because the distribution of the alternative hypothesis is narrower,
+more of its area will be to the left of the line (at least for the usual case
+where $ \mu_a $ is left of the cut-off value).
+For this example, the power is now about 80\%, even with the smaller effect size.
+
+\begin{figure}[H]
+\centering
+\includegraphics{figure/size}
+\caption{Effect size = 1/4; $n$ = 100; $\alpha = .05 $}
+\label{fig:size}
+\end{figure}
+
+\section{Code for the Figures}
+Function definition to produce plots.
+<<>>=
+makeplt <- function(effect, n, alpha) {
+    xlower <- -1.3
+    xupper <- .8
+    x <- seq(xlower, xupper, by=.01)
+    sigma <- 1
+    se <- sigma / sqrt(n)
+    y0 <- dnorm(x, 0, se)
+    ya <- dnorm(x, effect, se)
+    cutoff <- qnorm(alpha, 0, se)
+    lines.df <- data.frame(x=c(x, x), density=c(y0, ya),
+                           hyp=c(rep("null", length(x)), rep("alt", length(x))))
+    plt <- ggplot(lines.df, aes(x, y=density, col=hyp)) +
+        geom_line() +
+        scale_colour_manual(values=c("blue", "black")) +
+        guides(colour=FALSE)
+    plt <- plt + geom_vline(data=data.frame(cutoff), aes(xintercept=cutoff))
+    polys.df <- data.frame(x=c(x[x<cutoff], cutoff, xlower), y=c(ya[x<cutoff], 0, 0))
+    plt + geom_polygon(data=polys.df, aes(x, y, col=NULL), alpha=0.3)
+}
+@
+
+Figure \ref{fig:base}.
+<<label=base, fig.show="hide">>=
+effect <- -1/2
+n <- 20
+alpha <- 0.05
+sigma <- 1
+makeplt(effect, n, alpha)
+# Power
+se <- sigma / sqrt(n)
+cutoff <- qnorm(alpha, 0, se)
+pnorm(cutoff, effect, se)
+@
+
+Figure \ref{fig:alpha}.
+<<label=alpha, fig.show="hide">>=
+effect <- -1/2
+n <- 20
+alpha <- 0.1
+sigma <- 1
+makeplt(effect, n, alpha)
+# Power
+se <- sigma / sqrt(n)
+cutoff <- qnorm(alpha, 0, se)
+pnorm(cutoff, effect, se)
+@
+
+Figure \ref{fig:effect}.
+<<label=effect, fig.show="hide">>=
+effect <- -1/4
+n <- 20
+alpha <- 0.05
+sigma <- 1
+makeplt(effect, n, alpha)
+# Power
+se <- sigma / sqrt(n)
+cutoff <- qnorm(alpha, 0, se)
+pnorm(cutoff, effect, se)
+@
+
+Figure \ref{fig:size}.
+<<label=size, fig.show="hide">>=
+effect <- -1/4
+n <- 100
+alpha <- 0.05
+sigma <- 1
+makeplt(effect, n, alpha)
+# Power
+se <- sigma / sqrt(n)
+cutoff <- qnorm(alpha, 0, se)
+pnorm(cutoff, effect, se)
+@
+\end{document}
