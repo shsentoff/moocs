@@ -1,0 +1,7 @@
+A translation of the Java starter code for assignment 3 into Python3.
+As few changes as possible were made, and so the code doesn't look
+very "pythonic".
+
+Of course, this code cannot be submitted to the course auto-grader,
+but some test scripts are included.
+
